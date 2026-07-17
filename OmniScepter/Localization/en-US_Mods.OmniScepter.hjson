@@ -1,0 +1,15 @@
+Items: {
+	OmniScepterItem: {
+		DisplayName: Omni Scepter
+		Tooltip:
+			'''
+			Grants every useful buff for 2 hours
+			Reforges all weapons and accessories to their best prefixes
+			'''
+	}
+}
+
+Messages: {
+	Reforged: "Omni Scepter: reforged {0} item(s) to their best prefixes."
+	NothingToReforge: "Omni Scepter: all weapons and accessories already have their best prefixes."
+}

@@ -1,0 +1,15 @@
+Items: {
+	OmniScepterItem: {
+		DisplayName: 全能权杖
+		Tooltip:
+			'''
+			一键获得全部有益增益，持续 2 小时
+			一键将所有武器与饰品重铸为最佳词缀
+			'''
+	}
+}
+
+Messages: {
+	Reforged: "全能权杖：本次重铸了 {0} 件装备至最佳词缀。"
+	NothingToReforge: "全能权杖：所有武器和饰品都已经是最佳词缀了。"
+}

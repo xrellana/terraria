@@ -1,0 +1,3 @@
+displayName = Omni Scepter
+author = Zane
+version = 0.1
