@@ -50,6 +50,27 @@ namespace OmniScepter.Items
             BuffID.SugarRush,
         };
 
+        // Endgame gear granted by right click. Covers all four damage classes
+        // plus the strongest general-purpose armor and accessories.
+        private static readonly (int type, int stack)[] EndgameKit =
+        {
+            (ItemID.Zenith, 1),                 // melee sword
+            (ItemID.SDMG, 1),                   // ranged gun
+            (ItemID.LastPrism, 1),              // magic
+            (ItemID.EmpressBlade, 1),           // summon (Terraprisma)
+            (ItemID.RainbowWhip, 1),            // whip (Kaleidoscope)
+            (ItemID.SolarFlareHelmet, 1),
+            (ItemID.SolarFlareBreastplate, 1),
+            (ItemID.SolarFlareLeggings, 1),
+            (ItemID.LongRainbowTrailWings, 1),  // Celestial Starboard wings
+            (ItemID.AnkhShield, 1),
+            (ItemID.TerrasparkBoots, 1),
+            (ItemID.CelestialShell, 1),
+            (ItemID.MasterNinjaGear, 1),
+            (ItemID.DestroyerEmblem, 1),
+            (ItemID.MoonlordBullet, 999),       // ammo for the SDMG
+        };
+
         public override void SetDefaults()
         {
             Item.width = 40;
@@ -64,15 +85,58 @@ namespace OmniScepter.Items
             Item.noMelee = true;
         }
 
+        // Enables right click as a second use mode.
+        public override bool AltFunctionUse(Player player) => true;
+
         public override bool? UseItem(Player player)
         {
             // Inventory edits must only run for the player actually using the item.
             if (player.whoAmI == Main.myPlayer)
             {
-                ApplyAllBuffs(player);
-                EnchantAllEquipment(player);
+                if (player.altFunctionUse == 2)
+                {
+                    // Right click: hand out the endgame gear kit.
+                    GrantEndgameGear(player);
+                }
+                else
+                {
+                    // Left click: buffs + reforge, as before.
+                    ApplyAllBuffs(player);
+                    EnchantAllEquipment(player);
+                }
             }
             return true;
+        }
+
+        private void GrantEndgameGear(Player player)
+        {
+            int granted = 0;
+            foreach ((int type, int stack) in EndgameKit)
+            {
+                if (!PlayerOwns(player, type))
+                {
+                    player.QuickSpawnItem(player.GetSource_ItemUse(Item), type, stack);
+                    granted++;
+                }
+            }
+
+            string key = granted > 0
+                ? "Mods.OmniScepter.Messages.GearGranted"
+                : "Mods.OmniScepter.Messages.GearAlreadyOwned";
+            Main.NewText(Language.GetTextValue(key, granted), 255, 200, 60);
+        }
+
+        private static bool PlayerOwns(Player player, int type)
+        {
+            // Check equipped armor and accessories, then the inventory.
+            foreach (Item item in player.armor)
+            {
+                if (item.type == type)
+                {
+                    return true;
+                }
+            }
+            return player.HasItem(type);
         }
 
         private static void ApplyAllBuffs(Player player)
