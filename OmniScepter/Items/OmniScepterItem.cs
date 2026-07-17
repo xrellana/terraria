@@ -62,6 +62,9 @@ namespace OmniScepter.Items
             (ItemID.SolarFlareHelmet, 1),
             (ItemID.SolarFlareBreastplate, 1),
             (ItemID.SolarFlareLeggings, 1),
+            (ItemID.StardustHelmet, 1),         // Stardust set for summoners
+            (ItemID.StardustBreastplate, 1),
+            (ItemID.StardustLeggings, 1),
             (ItemID.LongRainbowTrailWings, 1),  // Celestial Starboard wings
             (ItemID.AnkhShield, 1),
             (ItemID.TerrasparkBoots, 1),
