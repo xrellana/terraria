@@ -213,7 +213,7 @@ namespace OmniScepter.Items
             // armor pieces (slots 0-2) cannot be reforged, so skip them.
             for (int i = 3; i < 10; i++)
             {
-                if (TryApplyPrefix(player.armor[i], PrefixID.Warding))
+                if (TryApplyPrefix(player.armor[i], PrefixID.Menacing))
                 {
                     reforged++;
                 }
@@ -231,7 +231,7 @@ namespace OmniScepter.Items
                 }
                 else if (!item.IsAir && item.accessory)
                 {
-                    if (TryApplyPrefix(item, PrefixID.Warding))
+                    if (TryApplyPrefix(item, PrefixID.Menacing))
                     {
                         reforged++;
                     }
@@ -250,7 +250,18 @@ namespace OmniScepter.Items
             {
                 return PrefixID.Unreal;
             }
-            if (item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Summon))
+            // Whips scale with melee speed and take melee prefixes since 1.4.4,
+            // so check them before the generic summon class they inherit from.
+            if (item.CountsAsClass(DamageClass.SummonMeleeSpeed))
+            {
+                return PrefixID.Legendary;
+            }
+            // Minions cannot crit, so raw damage beats Mythical for summon staffs.
+            if (item.CountsAsClass(DamageClass.Summon))
+            {
+                return PrefixID.Ruthless;
+            }
+            if (item.CountsAsClass(DamageClass.Magic))
             {
                 return PrefixID.Mythical;
             }

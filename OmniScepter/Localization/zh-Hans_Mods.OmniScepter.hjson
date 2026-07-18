@@ -10,9 +10,9 @@ Items: {
 }
 
 Messages: {
-	Reforged: "全能权杖：本次重铸了 {0} 件装备至最佳词缀。"
-	NothingToReforge: "全能权杖：所有武器和饰品都已经是最佳词缀了。"
-	GearGranted: "全能权杖：获得了 {0} 件毕业级装备，已拥有的不会重复发放。"
-	GearAlreadyOwned: "全能权杖：毕业套装和 Boss 召唤物你已经全都有了。"
-	LifeManaMaxed: "全能权杖：生命上限已拉满至 {0}，魔力上限已拉满至 {1}！"
+	Reforged: 全能权杖：本次重铸了 {0} 件装备至最佳词缀。
+	NothingToReforge: 全能权杖：所有武器和饰品都已经是最佳词缀了。
+	GearGranted: 全能权杖：获得了 {0} 件毕业级装备，已拥有的不会重复发放。
+	GearAlreadyOwned: 全能权杖：毕业套装和 Boss 召唤物你已经全都有了。
+	LifeManaMaxed: 全能权杖：生命上限已拉满至 {0}，魔力上限已拉满至 {1}！
 }
