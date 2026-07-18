@@ -9,6 +9,44 @@ Items: {
 			and a full set of boss summoning items
 			'''
 	}
+
+	OmniGlobeItem: {
+		DisplayName: Omni Globe
+		Tooltip:
+			'''
+			Left click: give it a shake and roll a random personal climate (Snowfall, Sandstorm, Blood Moon, Mushroom Glow, Hallow)
+			Right click: calm the climate
+			The climate only surrounds you, changing spawns, biome checks and weapon effects
+			without touching the rest of the world
+			'''
+	}
+}
+
+Buffs: {
+	SnowGlobeBuff: {
+		DisplayName: Personal Snowfall
+		Description: Snow swirls around you; your attacks inflict Frostburn
+	}
+
+	SandstormGlobeBuff: {
+		DisplayName: Personal Sandstorm
+		Description: A sandstorm follows you; 15% increased attack speed
+	}
+
+	BloodMoonGlobeBuff: {
+		DisplayName: Personal Blood Moon
+		Description: The blood moon looms over you; 15% increased damage, blood creatures seek you out
+	}
+
+	GlowshroomGlobeBuff: {
+		DisplayName: Personal Mushroom Glow
+		Description: Glowing spores light your way; greatly increased life regeneration
+	}
+
+	HallowGlobeBuff: {
+		DisplayName: Personal Hallow
+		Description: Blessed light surrounds you; 10% increased critical strike chance
+	}
 }
 
 Messages: {
@@ -17,4 +55,6 @@ Messages: {
 	GearGranted: "Omni Scepter: granted {0} piece(s) of endgame gear. Items you already own are skipped."
 	GearAlreadyOwned: "Omni Scepter: you already own every item in the endgame and boss summon kits."
 	LifeManaMaxed: "Omni Scepter: life maxed out at {0} and mana at {1}!"
+	GlobeMode: "Omni Globe: shake, shake... the snow settles on {0}!"
+	GlobeOff: "Omni Globe: the climate calms down."
 }

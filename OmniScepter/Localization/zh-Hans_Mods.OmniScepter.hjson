@@ -7,6 +7,43 @@ Items: {
 			右键：获得一套毕业级装备（武器、盔甲、饰品）和全套 Boss 召唤物
 			'''
 	}
+
+	OmniGlobeItem: {
+		DisplayName: 全能天境球
+		Tooltip:
+			'''
+			左键：摇一摇，随机摇出一种随身小气候（飘雪、沙暴、血月、菌光、神圣）
+			右键：让气候恢复平静
+			小气候只围绕你生效，会改变刷怪、环境判定并强化武器，不会影响整个世界
+			'''
+	}
+}
+
+Buffs: {
+	SnowGlobeBuff: {
+		DisplayName: 随身飘雪
+		Description: 你身边雪花纷飞，攻击附加霜火debuff
+	}
+
+	SandstormGlobeBuff: {
+		DisplayName: 随身沙暴
+		Description: 沙暴环绕着你，攻击速度提高15%
+	}
+
+	BloodMoonGlobeBuff: {
+		DisplayName: 随身血月
+		Description: 血月阴影笼罩着你，伤害提高15%，血月怪物会来袭
+	}
+
+	GlowshroomGlobeBuff: {
+		DisplayName: 随身菌光
+		Description: 荧光孢子照亮四周，生命再生大幅提高
+	}
+
+	HallowGlobeBuff: {
+		DisplayName: 随身神圣
+		Description: 圣光庇佑着你，暴击率提高10%
+	}
 }
 
 Messages: {
@@ -15,4 +52,6 @@ Messages: {
 	GearGranted: 全能权杖：获得了 {0} 件毕业级装备，已拥有的不会重复发放。
 	GearAlreadyOwned: 全能权杖：毕业套装和 Boss 召唤物你已经全都有了。
 	LifeManaMaxed: 全能权杖：生命上限已拉满至 {0}，魔力上限已拉满至 {1}！
+	GlobeMode: 全能天境球：摇啊摇……摇出了「{0}」！
+	GlobeOff: 全能天境球：气候恢复了平静。
 }
