@@ -1,1 +1,1 @@
-Adds the Omni Scepter: one click grants every useful buff and reforges all your weapons and accessories to their best prefixes.
+Adds the Omni Scepter: one click maxes out life and mana, grants every useful buff and reforges all your weapons and accessories to their best prefixes. Right click hands out an endgame gear kit plus every boss summoning item.

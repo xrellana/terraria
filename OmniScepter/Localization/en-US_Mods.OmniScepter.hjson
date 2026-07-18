@@ -3,9 +3,10 @@ Items: {
 		DisplayName: Omni Scepter
 		Tooltip:
 			'''
-			Left click: grants every useful buff for 2 hours
+			Left click: maxes out life and mana (500/200), grants every useful buff for 2 hours
 			and reforges all weapons and accessories to their best prefixes
 			Right click: receive an endgame gear kit (weapons, armor, accessories)
+			and a full set of boss summoning items
 			'''
 	}
 }
@@ -14,5 +15,6 @@ Messages: {
 	Reforged: "Omni Scepter: reforged {0} item(s) to their best prefixes."
 	NothingToReforge: "Omni Scepter: all weapons and accessories already have their best prefixes."
 	GearGranted: "Omni Scepter: granted {0} piece(s) of endgame gear. Items you already own are skipped."
-	GearAlreadyOwned: "Omni Scepter: you already own every item in the endgame kit."
+	GearAlreadyOwned: "Omni Scepter: you already own every item in the endgame and boss summon kits."
+	LifeManaMaxed: "Omni Scepter: life maxed out at {0} and mana at {1}!"
 }

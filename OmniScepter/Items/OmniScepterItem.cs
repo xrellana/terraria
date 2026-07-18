@@ -74,6 +74,29 @@ namespace OmniScepter.Items
             (ItemID.MoonlordBullet, 999),       // ammo for the SDMG
         };
 
+        // One summon item for every boss that can be summoned with an item.
+        // Skeletron has no summon item (talk to the Old Man); Plantera and the
+        // Lunatic Cultist are triggered in the world, so they are not listed.
+        private static readonly (int type, int stack)[] BossSummonKit =
+        {
+            (ItemID.SlimeCrown, 3),             // King Slime
+            (ItemID.SuspiciousLookingEye, 3),   // Eye of Cthulhu
+            (ItemID.WormFood, 3),               // Eater of Worlds
+            (ItemID.BloodySpine, 3),            // Brain of Cthulhu
+            (ItemID.Abeemination, 3),           // Queen Bee
+            (ItemID.DeerThing, 3),              // Deerclops
+            (ItemID.GuideVoodooDoll, 3),        // Wall of Flesh (drop into lava)
+            (ItemID.MechanicalEye, 3),          // The Twins
+            (ItemID.MechanicalWorm, 3),         // The Destroyer
+            (ItemID.MechanicalSkull, 3),        // Skeletron Prime
+            (ItemID.QueenSlimeCrystal, 3),      // Queen Slime
+            (ItemID.LihzahrdPowerCell, 3),      // Golem
+            (ItemID.TruffleWorm, 3),            // Duke Fishron (fishing bait)
+            (ItemID.EmpressButterfly, 3),       // Empress of Light (kill it at night)
+            (ItemID.CelestialSigil, 3),         // Moon Lord
+            (ItemID.ClothierVoodooDoll, 1),     // Skeletron re-fight via the Clothier
+        };
+
         public override void SetDefaults()
         {
             Item.width = 40;
@@ -103,8 +126,9 @@ namespace OmniScepter.Items
                 }
                 else
                 {
-                    // Left click: buffs + reforge, as before.
+                    // Left click: buffs + max life/mana + reforge.
                     ApplyAllBuffs(player);
+                    MaxOutLifeAndMana(player);
                     EnchantAllEquipment(player);
                 }
             }
@@ -113,8 +137,18 @@ namespace OmniScepter.Items
 
         private void GrantEndgameGear(Player player)
         {
+            int granted = GrantKit(player, EndgameKit) + GrantKit(player, BossSummonKit);
+
+            string key = granted > 0
+                ? "Mods.OmniScepter.Messages.GearGranted"
+                : "Mods.OmniScepter.Messages.GearAlreadyOwned";
+            Main.NewText(Language.GetTextValue(key, granted), 255, 200, 60);
+        }
+
+        private int GrantKit(Player player, (int type, int stack)[] kit)
+        {
             int granted = 0;
-            foreach ((int type, int stack) in EndgameKit)
+            foreach ((int type, int stack) in kit)
             {
                 if (!PlayerOwns(player, type))
                 {
@@ -122,11 +156,32 @@ namespace OmniScepter.Items
                     granted++;
                 }
             }
+            return granted;
+        }
 
-            string key = granted > 0
-                ? "Mods.OmniScepter.Messages.GearGranted"
-                : "Mods.OmniScepter.Messages.GearAlreadyOwned";
-            Main.NewText(Language.GetTextValue(key, granted), 255, 200, 60);
+        // Equivalent to consuming 15 Life Crystals, 20 Life Fruit and
+        // 9 Mana Crystals: 500 max life and 200 max mana.
+        private static void MaxOutLifeAndMana(Player player)
+        {
+            bool changed = player.ConsumedLifeCrystals < Player.LifeCrystalMax
+                || player.ConsumedLifeFruit < Player.LifeFruitMax
+                || player.ConsumedManaCrystals < Player.ManaCrystalMax;
+
+            player.ConsumedLifeCrystals = Player.LifeCrystalMax;
+            player.ConsumedLifeFruit = Player.LifeFruitMax;
+            player.ConsumedManaCrystals = Player.ManaCrystalMax;
+
+            // Also refill so the new capacity is immediately usable.
+            player.statLife = player.statLifeMax2;
+            player.statMana = player.statManaMax2;
+
+            if (changed)
+            {
+                Main.NewText(
+                    Language.GetTextValue("Mods.OmniScepter.Messages.LifeManaMaxed",
+                        player.statLifeMax, player.statManaMax),
+                    255, 200, 60);
+            }
         }
 
         private static bool PlayerOwns(Player player, int type)
