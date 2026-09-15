@@ -1,0 +1,106 @@
+name: Build
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+env:
+  MOD_NAME: OmniTools
+  # Without this the .tmod is written into the runner's tModLoader save
+  # directory. Point it at the workspace so the build output is reachable.
+  TML_BUILD_PATH_OVERRIDE: ./bin
+
+jobs:
+  build:
+    # windows-latest is what the tModLoader mods with working CI use. The
+    # managed build should also work on Linux, but that is untested here.
+    runs-on: windows-latest
+
+    permissions:
+      # Needed only by the release step, which runs on tags.
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      # tModLoader is not published to NuGet: a mod compiles against the
+      # assemblies shipped inside the loader, so CI has to fetch the loader
+      # itself. No Terraria install, Steam login or game assets are needed -
+      # this is a managed-assembly compile, not a game launch.
+      - name: Download tModLoader
+        shell: bash
+        run: curl -sSL -o tModLoader.zip https://github.com/tModLoader/tModLoader/releases/latest/download/tModLoader.zip
+
+      - name: Extract tModLoader
+        shell: bash
+        run: |
+          unzip -q -o tModLoader.zip -d tModLoader
+          rm tModLoader.zip
+
+      # OmniTools.csproj imports ..\tModLoader.targets, which tModLoader
+      # normally generates next to the mod folder in ModSources. It is not in
+      # the repo (and should not be - it is machine-local), so stand in for it.
+      - name: Create tModLoader.targets
+        shell: bash
+        run: |
+          cat > tModLoader.targets << 'EOF'
+          <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+            <Import Project="tModLoader/tMLMod.targets" />
+          </Project>
+          EOF
+
+      - name: Build
+        run: dotnet build ${{ env.MOD_NAME }}/${{ env.MOD_NAME }}.csproj --configuration Release
+
+      # A silently relocated output would otherwise leave a green build with
+      # nothing to publish.
+      - name: Locate the .tmod
+        id: tmod
+        shell: bash
+        run: |
+          path="bin/tModLoader/Mods/${MOD_NAME}.tmod"
+          if [ ! -f "$path" ]; then
+            echo "::error::Expected $path but the build did not produce it."
+            echo "Files under bin/:"
+            find bin -type f 2>/dev/null || echo "  (no bin/ directory at all)"
+            exit 1
+          fi
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+          ls -la "$path"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.MOD_NAME }}-tmod
+          path: ${{ steps.tmod.outputs.path }}
+          if-no-files-found: error
+
+      # A .tmod whose internal version disagrees with the release tag makes
+      # tModLoader's update check lie to players, so refuse to publish one.
+      - name: Check build.txt version matches the tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          declared=$(sed -n 's/^version[[:space:]]*=[[:space:]]*//p' "${MOD_NAME}/build.txt" | tr -d '[:space:]')
+          if [ "$tag" != "$declared" ]; then
+            echo "::error::Tag is v${tag} but ${MOD_NAME}/build.txt says version = ${declared}. Bump build.txt and re-tag."
+            exit 1
+          fi
+          echo "Tag v${tag} matches build.txt."
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
+        with:
+          files: ${{ steps.tmod.outputs.path }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -49,6 +49,34 @@ OmniTools/
 
 Place the `OmniTools` folder in your tModLoader `ModSources` directory and build it from the in-game Workshop → Develop Mods menu, or compile with the tModLoader `.targets` via the included `.csproj`. The folder name is the mod's internal name and has to stay `OmniTools` to match `<AssemblyName>`.
 
+## CI and releases
+
+`.github/workflows/build.yml` builds the mod on every push and pull request, and
+uploads the resulting `.tmod` as a run artifact, so any commit can be installed
+without a local tModLoader setup.
+
+CI does not need Terraria, Steam or any game assets. It downloads
+`tModLoader.zip` from the loader's latest GitHub release, writes the
+`tModLoader.targets` shim that `OmniTools.csproj` imports, and runs a plain
+`dotnet build` — `tMLMod.targets` inside that zip does the `.tmod` packing.
+
+To cut a release:
+
+1. Bump `version` in `OmniTools/build.txt`, commit it.
+2. Tag the commit with a matching `v` tag and push the tag:
+
+   ```
+   git tag v0.2 && git push origin v0.2
+   ```
+
+The tagged run publishes a GitHub Release with the `.tmod` attached and
+generated release notes. The workflow refuses to publish when the tag and
+`build.txt` disagree, since tModLoader reads its update version from
+`build.txt` and a mismatch would misreport updates to players.
+
+Players install a release by dropping the `.tmod` into their tModLoader `Mods`
+folder.
+
 ## Localization
 
 Ships with English (`en-US`) and Simplified Chinese (`zh-Hans`).
