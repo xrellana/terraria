@@ -4,7 +4,7 @@ using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
 
-namespace OmniScepter.Items
+namespace OmniTools.Common
 {
     // Shared plumbing for the mod's two items: both borrow a vanilla sprite,
     // craft from the same cheap recipe, split their behaviour across left and
@@ -55,7 +55,9 @@ namespace OmniScepter.Items
 
         protected void Announce(string key, params object[] args)
         {
-            string fullKey = $"Mods.OmniScepter.Messages.{key}";
+            // Built from Mod.Name rather than a literal so renaming the mod
+            // cannot silently turn every message into a raw key.
+            string fullKey = $"Mods.{Mod.Name}.Messages.{key}";
             string text = args.Length == 0
                 ? Language.GetTextValue(fullKey)
                 : Language.GetTextValue(fullKey, args);

@@ -3,8 +3,9 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
+using OmniTools.Common;
 
-namespace OmniScepter.Items
+namespace OmniTools.Scepter
 {
     public class OmniScepterItem : OmniItemBase
     {

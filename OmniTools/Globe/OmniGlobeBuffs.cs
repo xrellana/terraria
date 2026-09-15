@@ -3,7 +3,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace OmniScepter.Buffs
+namespace OmniTools.Globe
 {
     // Base class for the Omni Globe personal climates. Each climate is a buff so
     // that vanilla handles multiplayer sync, saving and the on-screen icon for

@@ -2,9 +2,8 @@ using System.Collections.Generic;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using OmniScepter.Buffs;
 
-namespace OmniScepter.Common
+namespace OmniTools.Globe
 {
     // The personal blood moon cannot flip the global Main.bloodMoon flag without
     // affecting everyone, so instead it injects blood moon enemies into the spawn

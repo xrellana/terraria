@@ -1,4 +1,4 @@
-# Omni Scepter
+# Omni Tools
 
 A quality-of-life / cheat mod for [tModLoader](https://github.com/tModLoader/tModLoader) (Terraria 1.4.4+). It adds two cheap craftable items that remove grind: the **Omni Scepter** for buffs, stats, reforging and endgame gear, and the **Omni Globe** for on-demand personal weather.
 
@@ -36,17 +36,18 @@ Crafted from 10 Wood at a Work Bench. Uses the Snow Globe sprite until custom ar
 ## Project layout
 
 ```
-OmniScepter/
-├── Items/          OmniItemBase (shared plumbing), OmniScepterItem, OmniGlobeItem
-├── Buffs/          The five personal climate buffs
-├── Common/         ModPlayer / GlobalNPC glue for the climates
+OmniTools/
+├── Common/         OmniItemBase, the plumbing both items share
+├── Scepter/        OmniScepterItem
+├── Globe/          OmniGlobeItem, the five climate buffs, and the
+│                   ModPlayer / GlobalNPC hooks the climates need
 ├── Localization/   English and Simplified Chinese strings
 └── build.txt       Mod metadata
 ```
 
 ## Building
 
-Place the `OmniScepter` folder in your tModLoader `ModSources` directory and build it from the in-game Workshop → Develop Mods menu, or compile with the tModLoader `.targets` via the included `.csproj`.
+Place the `OmniTools` folder in your tModLoader `ModSources` directory and build it from the in-game Workshop → Develop Mods menu, or compile with the tModLoader `.targets` via the included `.csproj`. The folder name is the mod's internal name and has to stay `OmniTools` to match `<AssemblyName>`.
 
 ## Localization
 

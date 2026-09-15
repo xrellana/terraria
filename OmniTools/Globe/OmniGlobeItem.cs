@@ -2,9 +2,9 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using OmniScepter.Buffs;
+using OmniTools.Common;
 
-namespace OmniScepter.Items
+namespace OmniTools.Globe
 {
     public class OmniGlobeItem : OmniItemBase
     {
