@@ -296,11 +296,8 @@ namespace OmniTools.Scepter
                 return false;
             }
 
-            // Reforging works like vanilla: reset the item, then roll the prefix.
-            // These loader hooks are what let modded weapons carry their own
-            // saved data across that reset, exactly as the Goblin Tinkerer does,
-            // and let one refuse to be reforged at all.
-            if (!ItemLoader.PreReforge(item))
+            // Respect a modded item that refuses to be reforged at all.
+            if (!ItemLoader.CanReforge(item))
             {
                 return false;
             }
@@ -309,6 +306,10 @@ namespace OmniTools.Scepter
             bool favorited = item.favorited;
             int stack = item.stack;
 
+            // Reforging works like vanilla: reset the item, then roll the prefix.
+            // PreReforge / PostReforge are what let modded weapons carry their
+            // own saved data across that reset, as the Goblin Tinkerer does.
+            ItemLoader.PreReforge(item);
             item.SetDefaults(item.type);
 
             // Not every prefix fits every item (e.g. spears can't be Legendary),
