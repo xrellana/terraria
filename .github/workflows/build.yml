@@ -1,10 +1,14 @@
 name: Build
 
+# Only main matters. A merged pull request lands on main as a push, so that
+# path is covered too; feature branches are left alone. Use the manual
+# dispatch below to build a branch on demand.
 on:
   push:
-    branches: ['**']
-    tags: ['v*']
-  pull_request:
+    branches: [main]
+    paths:
+      - 'OmniTools/**'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 env:
@@ -20,7 +24,7 @@ jobs:
     runs-on: windows-latest
 
     permissions:
-      # Needed only by the release step, which runs on tags.
+      # Needed by the release step, which also creates the tag.
       contents: write
 
     steps:
@@ -29,6 +33,30 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '8.0.x'
+
+      # build.txt is the single source of truth for the version: tModLoader
+      # reads its update version from there, so deriving the release from it
+      # means the tag and the .tmod can never disagree. Bumping it is what
+      # publishes a release; leaving it alone just builds.
+      - name: Decide whether this version needs releasing
+        id: ver
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -n 's/^version[[:space:]]*=[[:space:]]*//p' "${MOD_NAME}/build.txt" | tr -d '[:space:]')
+          if [ -z "$version" ]; then
+            echo "::error::No 'version = ' line found in ${MOD_NAME}/build.txt"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::v${version} is already released - building only."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::v${version} is new - a release will be published."
+          fi
 
       # tModLoader is not published to NuGet: a mod compiles against the
       # assemblies shipped inside the loader, so CI has to fetch the loader
@@ -77,30 +105,16 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.MOD_NAME }}-tmod
+          name: ${{ env.MOD_NAME }}-${{ steps.ver.outputs.version }}-tmod
           path: ${{ steps.tmod.outputs.path }}
           if-no-files-found: error
 
-      # A .tmod whose internal version disagrees with the release tag makes
-      # tModLoader's update check lie to players, so refuse to publish one.
-      - name: Check build.txt version matches the tag
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          tag="${GITHUB_REF_NAME#v}"
-          declared=$(sed -n 's/^version[[:space:]]*=[[:space:]]*//p' "${MOD_NAME}/build.txt" | tr -d '[:space:]')
-          if [ "$tag" != "$declared" ]; then
-            echo "::error::Tag is v${tag} but ${MOD_NAME}/build.txt says version = ${declared}. Bump build.txt and re-tag."
-            exit 1
-          fi
-          echo "Tag v${tag} matches build.txt."
-
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.ver.outputs.release == 'true'
         uses: softprops/action-gh-release@v3
         with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: v${{ steps.ver.outputs.version }}
           files: ${{ steps.tmod.outputs.path }}
           generate_release_notes: true
           fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

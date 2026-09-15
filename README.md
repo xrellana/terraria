@@ -51,28 +51,28 @@ Place the `OmniTools` folder in your tModLoader `ModSources` directory and build
 
 ## CI and releases
 
-`.github/workflows/build.yml` builds the mod on every push and pull request, and
-uploads the resulting `.tmod` as a run artifact, so any commit can be installed
-without a local tModLoader setup.
+`.github/workflows/build.yml` runs when `OmniTools/**` or the workflow itself
+changes on `main` — a direct push, or a merged pull request, which lands on
+`main` as a push either way. Feature branches and README-only commits do not
+trigger it; `workflow_dispatch` builds any branch on demand.
 
 CI does not need Terraria, Steam or any game assets. It downloads
 `tModLoader.zip` from the loader's latest GitHub release, writes the
 `tModLoader.targets` shim that `OmniTools.csproj` imports, and runs a plain
 `dotnet build` — `tMLMod.targets` inside that zip does the `.tmod` packing.
+Every run uploads the `.tmod` as an artifact.
 
-To cut a release:
+**`version` in `OmniTools/build.txt` is what publishes a release.** Each run
+reads it and checks whether `v<version>` already exists:
 
-1. Bump `version` in `OmniTools/build.txt`, commit it.
-2. Tag the commit with a matching `v` tag and push the tag:
+- Not released yet → the run tags the commit and publishes a GitHub Release
+  with the `.tmod` attached and generated release notes.
+- Already released → the run builds and uploads the artifact, nothing else.
 
-   ```
-   git tag v0.2 && git push origin v0.2
-   ```
-
-The tagged run publishes a GitHub Release with the `.tmod` attached and
-generated release notes. The workflow refuses to publish when the tag and
-`build.txt` disagree, since tModLoader reads its update version from
-`build.txt` and a mismatch would misreport updates to players.
+So bumping `version` in the commit or PR you merge is the release switch. There
+is no separate tagging step, and the tag can never disagree with the version
+inside the `.tmod` — which matters because tModLoader reads its update version
+from `build.txt`, so a mismatch would misreport updates to players.
 
 Players install a release by dropping the `.tmod` into their tModLoader `Mods`
 folder.
