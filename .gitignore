@@ -1,2 +1,9 @@
 obj/
 bin/
+
+# Fetched by CI (and by a local build if you mirror it) next to the mod
+# folder, exactly where tModLoader puts them in ModSources. Machine-local,
+# ~58 MB, never committed.
+tModLoader/
+tModLoader.targets
+tModLoader.zip

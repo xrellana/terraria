@@ -1,0 +1,120 @@
+name: Build
+
+# Only main matters. A merged pull request lands on main as a push, so that
+# path is covered too; feature branches are left alone. Use the manual
+# dispatch below to build a branch on demand.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'OmniTools/**'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+env:
+  MOD_NAME: OmniTools
+  # Without this the .tmod is written into the runner's tModLoader save
+  # directory. Point it at the workspace so the build output is reachable.
+  TML_BUILD_PATH_OVERRIDE: ./bin
+
+jobs:
+  build:
+    # windows-latest is what the tModLoader mods with working CI use. The
+    # managed build should also work on Linux, but that is untested here.
+    runs-on: windows-latest
+
+    permissions:
+      # Needed by the release step, which also creates the tag.
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      # build.txt is the single source of truth for the version: tModLoader
+      # reads its update version from there, so deriving the release from it
+      # means the tag and the .tmod can never disagree. Bumping it is what
+      # publishes a release; leaving it alone just builds.
+      - name: Decide whether this version needs releasing
+        id: ver
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -n 's/^version[[:space:]]*=[[:space:]]*//p' "${MOD_NAME}/build.txt" | tr -d '[:space:]')
+          if [ -z "$version" ]; then
+            echo "::error::No 'version = ' line found in ${MOD_NAME}/build.txt"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::v${version} is already released - building only."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::v${version} is new - a release will be published."
+          fi
+
+      # tModLoader is not published to NuGet: a mod compiles against the
+      # assemblies shipped inside the loader, so CI has to fetch the loader
+      # itself. No Terraria install, Steam login or game assets are needed -
+      # this is a managed-assembly compile, not a game launch.
+      - name: Download tModLoader
+        shell: bash
+        run: curl -sSL -o tModLoader.zip https://github.com/tModLoader/tModLoader/releases/latest/download/tModLoader.zip
+
+      - name: Extract tModLoader
+        shell: bash
+        run: |
+          unzip -q -o tModLoader.zip -d tModLoader
+          rm tModLoader.zip
+
+      # OmniTools.csproj imports ..\tModLoader.targets, which tModLoader
+      # normally generates next to the mod folder in ModSources. It is not in
+      # the repo (and should not be - it is machine-local), so stand in for it.
+      - name: Create tModLoader.targets
+        shell: bash
+        run: |
+          cat > tModLoader.targets << 'EOF'
+          <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+            <Import Project="tModLoader/tMLMod.targets" />
+          </Project>
+          EOF
+
+      - name: Build
+        run: dotnet build ${{ env.MOD_NAME }}/${{ env.MOD_NAME }}.csproj --configuration Release
+
+      # A silently relocated output would otherwise leave a green build with
+      # nothing to publish.
+      - name: Locate the .tmod
+        id: tmod
+        shell: bash
+        run: |
+          path="bin/tModLoader/Mods/${MOD_NAME}.tmod"
+          if [ ! -f "$path" ]; then
+            echo "::error::Expected $path but the build did not produce it."
+            echo "Files under bin/:"
+            find bin -type f 2>/dev/null || echo "  (no bin/ directory at all)"
+            exit 1
+          fi
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+          ls -la "$path"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.MOD_NAME }}-${{ steps.ver.outputs.version }}-tmod
+          path: ${{ steps.tmod.outputs.path }}
+          if-no-files-found: error
+
+      - name: Publish release
+        if: steps.ver.outputs.release == 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: v${{ steps.ver.outputs.version }}
+          files: ${{ steps.tmod.outputs.path }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true

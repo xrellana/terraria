@@ -1,9 +1,8 @@
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using OmniScepter.Buffs;
 
-namespace OmniScepter.Common
+namespace OmniTools.Globe
 {
     // Weapon effects tied to the Omni Globe climates that need combat hooks.
     public class OmniGlobePlayer : ModPlayer

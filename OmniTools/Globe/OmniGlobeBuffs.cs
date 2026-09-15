@@ -3,13 +3,19 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace OmniScepter.Buffs
+namespace OmniTools.Globe
 {
     // Base class for the Omni Globe personal climates. Each climate is a buff so
     // that vanilla handles multiplayer sync, saving and the on-screen icon for
     // free; right-clicking the icon dispels the climate like any other buff.
     public abstract class OmniGlobeBuff : ModBuff
     {
+        // How long a freshly shaken climate lasts. Update alone keeps topping it
+        // back up, so the only thing this really controls is how long the climate
+        // survives if Update ever stops running (loading screens, death, reload).
+        // The item applies it and Update refreshes it, so both must agree.
+        public const int ClimateDuration = 18000;
+
         // Borrow a fitting vanilla buff icon so the mod works without custom art.
         public override string Texture => $"Terraria/Images/Buff_{VanillaIconBuff}";
 
@@ -24,7 +30,7 @@ namespace OmniScepter.Buffs
         public sealed override void Update(Player player, ref int buffIndex)
         {
             // Keep the climate active until it is dispelled manually.
-            player.buffTime[buffIndex] = 18000;
+            player.buffTime[buffIndex] = ClimateDuration;
             UpdateClimate(player);
         }
 
