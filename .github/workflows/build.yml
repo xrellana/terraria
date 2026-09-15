@@ -13,9 +13,10 @@ on:
 
 env:
   MOD_NAME: OmniTools
-  # Without this the .tmod is written into the runner's tModLoader save
-  # directory. Point it at the workspace so the build output is reachable.
-  TML_BUILD_PATH_OVERRIDE: ./bin
+  # Steers the .tmod away from the runner's tModLoader save directory.
+  # Absolute, because a relative value is not resolved against the repo root.
+  # The locate step below does not rely on this landing anywhere in particular.
+  TML_BUILD_PATH_OVERRIDE: ${{ github.workspace }}/bin
 
 jobs:
   build:
@@ -87,21 +88,29 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.MOD_NAME }}/${{ env.MOD_NAME }}.csproj --configuration Release
 
-      # A silently relocated output would otherwise leave a green build with
-      # nothing to publish.
+      # Where tMLMod.targets drops the .tmod depends on the loader version and
+      # on how it reads the override above, so search for it instead of
+      # hardcoding a path, then stage it somewhere stable for the steps below.
+      # Failing loudly here keeps a relocated output from leaving a green run
+      # with nothing published.
       - name: Locate the .tmod
         id: tmod
         shell: bash
         run: |
-          path="bin/tModLoader/Mods/${MOD_NAME}.tmod"
-          if [ ! -f "$path" ]; then
-            echo "::error::Expected $path but the build did not produce it."
-            echo "Files under bin/:"
-            find bin -type f 2>/dev/null || echo "  (no bin/ directory at all)"
+          found=$(find . "$HOME" -name "${MOD_NAME}.tmod" -type f 2>/dev/null | head -1)
+          if [ -z "$found" ]; then
+            echo "::error::No ${MOD_NAME}.tmod anywhere in the workspace or home directory."
+            echo "Any .tmod files:"
+            find . "$HOME" -name '*.tmod' -type f 2>/dev/null | head -20 || true
+            echo "Build output:"
+            find . -name '*.dll' -path '*Release*' -type f 2>/dev/null | head -20 || true
             exit 1
           fi
-          echo "path=$path" >> "$GITHUB_OUTPUT"
-          ls -la "$path"
+          echo "Found at: $found"
+          mkdir -p dist
+          cp "$found" "dist/${MOD_NAME}.tmod"
+          echo "path=dist/${MOD_NAME}.tmod" >> "$GITHUB_OUTPUT"
+          ls -la "dist/${MOD_NAME}.tmod"
 
       - uses: actions/upload-artifact@v7
         with:
