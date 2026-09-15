@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
@@ -17,6 +18,13 @@ namespace OmniScepter.Items
         // A prefix id of 0 is vanilla's "no prefix", which doubles here as
         // "this item cannot be reforged".
         private const int NoPrefix = 0;
+
+        // Vanilla stat caps, expressed the way the crystals build them up.
+        private const int BaseLife = 100;
+        private const int LifePerCrystal = 20;
+        private const int LifePerFruit = 5;
+        private const int BaseMana = 20;
+        private const int ManaPerCrystal = 20;
 
         // Curated list of beneficial buffs. Deliberately excludes ones that
         // change movement in annoying ways (Gravitation, Featherfall).
@@ -132,41 +140,68 @@ namespace OmniScepter.Items
             int granted = 0;
             foreach ((int type, int stack) in kit)
             {
-                if (!PlayerOwns(player, type))
+                // Top up to the stack the kit asks for instead of skipping the
+                // entry outright, so owning one Luminite Bullet does not cost
+                // you the other 998.
+                int missing = stack - CountOwned(player, type, stack);
+                if (missing > 0)
                 {
-                    player.QuickSpawnItem(player.GetSource_ItemUse(Item), type, stack);
+                    player.QuickSpawnItem(player.GetSource_ItemUse(Item), type, missing);
                     granted++;
                 }
             }
             return granted;
         }
 
-        private static bool PlayerOwns(Player player, int type)
+        // Counts equipped pieces as well as carried ones, so wearing the Ankh
+        // Shield still counts as owning it. Stops early once the kit's stack is
+        // covered, which is all the caller needs to know.
+        private static int CountOwned(Player player, int type, int stopCountingAt)
         {
-            // Check equipped armor and accessories, then the inventory.
+            int count = 0;
             foreach (Item item in player.armor)
             {
                 if (item.type == type)
                 {
-                    return true;
+                    count += item.stack;
+                    if (count >= stopCountingAt)
+                    {
+                        return count;
+                    }
                 }
             }
-            return player.HasItem(type);
+            return count + player.CountItem(type, stopCountingAt - count);
         }
 
         // Equivalent to consuming 15 Life Crystals, 20 Life Fruit and
         // 9 Mana Crystals: 500 max life and 200 max mana.
         private void MaxOutLifeAndMana(Player player)
         {
-            bool changed = player.ConsumedLifeCrystals < Player.LifeCrystalMax
+            int targetLife = BaseLife
+                + Player.LifeCrystalMax * LifePerCrystal
+                + Player.LifeFruitMax * LifePerFruit;
+            int targetMana = BaseMana + Player.ManaCrystalMax * ManaPerCrystal;
+
+            bool changed = player.statLifeMax < targetLife
+                || player.statManaMax < targetMana
+                || player.ConsumedLifeCrystals < Player.LifeCrystalMax
                 || player.ConsumedLifeFruit < Player.LifeFruitMax
                 || player.ConsumedManaCrystals < Player.ManaCrystalMax;
 
+            // The Consumed* counters only record how many crystals were eaten;
+            // the caps themselves live in statLifeMax / statManaMax, so both
+            // halves have to be written or the cap never actually moves.
+            // Max() leaves a higher cap set by another mod alone.
+            player.statLifeMax = Math.Max(player.statLifeMax, targetLife);
+            player.statManaMax = Math.Max(player.statManaMax, targetMana);
             player.ConsumedLifeCrystals = Player.LifeCrystalMax;
             player.ConsumedLifeFruit = Player.LifeFruitMax;
             player.ConsumedManaCrystals = Player.ManaCrystalMax;
 
-            // Also refill so the new capacity is immediately usable.
+            // statLifeMax2 is only recomputed on the next frame, so raise it
+            // here too; otherwise the refill below clamps to the old cap.
+            player.statLifeMax2 = Math.Max(player.statLifeMax2, player.statLifeMax);
+            player.statManaMax2 = Math.Max(player.statManaMax2, player.statManaMax);
             player.statLife = player.statLifeMax2;
             player.statMana = player.statManaMax2;
 
@@ -260,10 +295,19 @@ namespace OmniScepter.Items
                 return false;
             }
 
+            // Reforging works like vanilla: reset the item, then roll the prefix.
+            // These loader hooks are what let modded weapons carry their own
+            // saved data across that reset, exactly as the Goblin Tinkerer does,
+            // and let one refuse to be reforged at all.
+            if (!ItemLoader.PreReforge(item))
+            {
+                return false;
+            }
+
             int originalPrefix = item.prefix;
             bool favorited = item.favorited;
+            int stack = item.stack;
 
-            // Reforging works like vanilla: reset the item, then roll the prefix.
             item.SetDefaults(item.type);
 
             // Not every prefix fits every item (e.g. spears can't be Legendary),
@@ -277,7 +321,11 @@ namespace OmniScepter.Items
                 item.Prefix(originalPrefix);
             }
 
+            ItemLoader.PostReforge(item);
+
+            // SetDefaults wiped these; put them back the way vanilla reforging does.
             item.favorited = favorited;
+            item.stack = stack;
             return item.prefix != originalPrefix;
         }
     }
