@@ -10,7 +10,7 @@ Crafted from 10 Wood at a Work Bench. Uses the Rainbow Rod sprite until custom a
 
 **Left click:**
 
-- Applies a curated list of 30 beneficial buffs for two in-game hours each (movement-altering buffs like Gravitation and Featherfall are deliberately excluded).
+- Applies a curated list of 30 beneficial buffs for two hours of real time each (movement-altering buffs like Gravitation and Featherfall are deliberately excluded).
 - Maxes out life and mana (500 HP / 200 MP), as if you had consumed every Life Crystal, Life Fruit and Mana Crystal, and refills both.
 - Reforges everything you carry to its best prefix:
   - Ranged weapons → Unreal
@@ -37,7 +37,7 @@ Crafted from 10 Wood at a Work Bench. Uses the Snow Globe sprite until custom ar
 
 ```
 OmniScepter/
-├── Items/          OmniScepterItem, OmniGlobeItem
+├── Items/          OmniItemBase (shared plumbing), OmniScepterItem, OmniGlobeItem
 ├── Buffs/          The five personal climate buffs
 ├── Common/         ModPlayer / GlobalNPC glue for the climates
 ├── Localization/   English and Simplified Chinese strings

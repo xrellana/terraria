@@ -1,64 +1,64 @@
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
-using Terraria.Localization;
 using Terraria.ModLoader;
 using OmniScepter.Buffs;
 
 namespace OmniScepter.Items
 {
-    public class OmniGlobeItem : ModItem
+    public class OmniGlobeItem : OmniItemBase
     {
-        // Borrow the Snow Globe sprite so the mod works without custom art.
-        // Replace with a real OmniGlobeItem.png next to this file to use your own sprite.
-        public override string Texture => $"Terraria/Images/Item_{ItemID.SnowGlobe}";
+        protected override int BorrowedSprite => ItemID.SnowGlobe;
 
-        // The personal climates the globe can be shaken into.
-        private static ModBuff[] Climates => new ModBuff[]
+        protected override Color MessageColor => new Color(150, 220, 255);
+
+        // The personal climates the globe can be shaken into. Built once, after
+        // every buff has been registered, rather than on each click.
+        private static ModBuff[] climates;
+
+        public override void SetStaticDefaults()
         {
-            ModContent.GetInstance<SnowGlobeBuff>(),
-            ModContent.GetInstance<SandstormGlobeBuff>(),
-            ModContent.GetInstance<BloodMoonGlobeBuff>(),
-            ModContent.GetInstance<GlowshroomGlobeBuff>(),
-            ModContent.GetInstance<HallowGlobeBuff>(),
-        };
+            climates = new ModBuff[]
+            {
+                ModContent.GetInstance<SnowGlobeBuff>(),
+                ModContent.GetInstance<SandstormGlobeBuff>(),
+                ModContent.GetInstance<BloodMoonGlobeBuff>(),
+                ModContent.GetInstance<GlowshroomGlobeBuff>(),
+                ModContent.GetInstance<HallowGlobeBuff>(),
+            };
+        }
+
+        public override void Unload()
+        {
+            // tModLoader reloads mods in-process, so static references to modded
+            // content have to be dropped or the old assembly leaks.
+            climates = null;
+        }
 
         public override void SetDefaults()
         {
+            base.SetDefaults();
             Item.width = 28;
             Item.height = 28;
-            Item.useStyle = ItemUseStyleID.HoldUp;
             Item.useTime = 20;
             Item.useAnimation = 20;
-            Item.UseSound = SoundID.Item4;
             Item.rare = ItemRarityID.Blue;
             Item.value = Terraria.Item.sellPrice(silver: 10);
-            Item.maxStack = 1;
-            Item.noMelee = true;
         }
 
-        // Enables right click as a second use mode.
-        public override bool AltFunctionUse(Player player) => true;
-
-        public override bool? UseItem(Player player)
+        protected override void OnLeftClick(Player player)
         {
-            if (player.whoAmI == Main.myPlayer)
-            {
-                if (player.altFunctionUse == 2)
-                {
-                    // Right click: calm the climate.
-                    ClearClimates(player, announce: true);
-                }
-                else
-                {
-                    ShakeClimate(player);
-                }
-            }
-            return true;
+            ShakeClimate(player);
         }
 
-        private static void ShakeClimate(Player player)
+        // Right click: calm the climate.
+        protected override void OnRightClick(Player player)
         {
-            ModBuff[] climates = Climates;
+            ClearClimates(player, announce: true);
+        }
+
+        private void ShakeClimate(Player player)
+        {
             int current = -1;
             for (int i = 0; i < climates.Length; i++)
             {
@@ -78,33 +78,20 @@ namespace OmniScepter.Items
             }
 
             ClearClimates(player, announce: false);
-            player.AddBuff(climates[next].Type, 18000);
-            Main.NewText(
-                Language.GetTextValue("Mods.OmniScepter.Messages.GlobeMode",
-                    climates[next].DisplayName.Value),
-                150, 220, 255);
+            player.AddBuff(climates[next].Type, OmniGlobeBuff.ClimateDuration);
+            Announce("GlobeMode", climates[next].DisplayName.Value);
         }
 
-        private static void ClearClimates(Player player, bool announce)
+        private void ClearClimates(Player player, bool announce)
         {
-            foreach (ModBuff climate in Climates)
+            foreach (ModBuff climate in climates)
             {
                 player.ClearBuff(climate.Type);
             }
             if (announce)
             {
-                Main.NewText(Language.GetTextValue("Mods.OmniScepter.Messages.GlobeOff"),
-                    150, 220, 255);
+                Announce("GlobeOff");
             }
-        }
-
-        public override void AddRecipes()
-        {
-            // Cheap on purpose: meant to be available from the first tree you chop.
-            CreateRecipe()
-                .AddIngredient(ItemID.Wood, 10)
-                .AddTile(TileID.WorkBenches)
-                .Register();
         }
     }
 }

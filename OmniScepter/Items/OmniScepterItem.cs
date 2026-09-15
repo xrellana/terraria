@@ -1,18 +1,22 @@
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
-using Terraria.Localization;
 using Terraria.ModLoader;
 
 namespace OmniScepter.Items
 {
-    public class OmniScepterItem : ModItem
+    public class OmniScepterItem : OmniItemBase
     {
-        // Borrow the Rainbow Rod sprite so the mod works without custom art.
-        // Replace with a real OmniScepterItem.png next to this file to use your own sprite.
-        public override string Texture => $"Terraria/Images/Item_{ItemID.RainbowRod}";
+        protected override int BorrowedSprite => ItemID.RainbowRod;
 
-        // Two in-game hours per click (60 ticks per second).
+        protected override Color MessageColor => new Color(255, 200, 60);
+
+        // Two hours of real time per click (60 ticks per second).
         private const int BuffDuration = 60 * 60 * 120;
+
+        // A prefix id of 0 is vanilla's "no prefix", which doubles here as
+        // "this item cannot be reforged".
+        private const int NoPrefix = 0;
 
         // Curated list of beneficial buffs. Deliberately excludes ones that
         // change movement in annoying ways (Gravitation, Featherfall).
@@ -99,50 +103,28 @@ namespace OmniScepter.Items
 
         public override void SetDefaults()
         {
+            base.SetDefaults();
             Item.width = 40;
             Item.height = 40;
-            Item.useStyle = ItemUseStyleID.HoldUp;
             Item.useTime = 30;
             Item.useAnimation = 30;
-            Item.UseSound = SoundID.Item4;
             Item.rare = ItemRarityID.Red;
             Item.value = Terraria.Item.sellPrice(gold: 10);
-            Item.maxStack = 1;
-            Item.noMelee = true;
         }
 
-        // Enables right click as a second use mode.
-        public override bool AltFunctionUse(Player player) => true;
-
-        public override bool? UseItem(Player player)
+        // Left click: buffs + max life/mana + reforge.
+        protected override void OnLeftClick(Player player)
         {
-            // Inventory edits must only run for the player actually using the item.
-            if (player.whoAmI == Main.myPlayer)
-            {
-                if (player.altFunctionUse == 2)
-                {
-                    // Right click: hand out the endgame gear kit.
-                    GrantEndgameGear(player);
-                }
-                else
-                {
-                    // Left click: buffs + max life/mana + reforge.
-                    ApplyAllBuffs(player);
-                    MaxOutLifeAndMana(player);
-                    EnchantAllEquipment(player);
-                }
-            }
-            return true;
+            ApplyAllBuffs(player);
+            MaxOutLifeAndMana(player);
+            EnchantAllEquipment(player);
         }
 
-        private void GrantEndgameGear(Player player)
+        // Right click: hand out the endgame gear kit.
+        protected override void OnRightClick(Player player)
         {
             int granted = GrantKit(player, EndgameKit) + GrantKit(player, BossSummonKit);
-
-            string key = granted > 0
-                ? "Mods.OmniScepter.Messages.GearGranted"
-                : "Mods.OmniScepter.Messages.GearAlreadyOwned";
-            Main.NewText(Language.GetTextValue(key, granted), 255, 200, 60);
+            Announce(granted > 0 ? "GearGranted" : "GearAlreadyOwned", granted);
         }
 
         private int GrantKit(Player player, (int type, int stack)[] kit)
@@ -159,9 +141,22 @@ namespace OmniScepter.Items
             return granted;
         }
 
+        private static bool PlayerOwns(Player player, int type)
+        {
+            // Check equipped armor and accessories, then the inventory.
+            foreach (Item item in player.armor)
+            {
+                if (item.type == type)
+                {
+                    return true;
+                }
+            }
+            return player.HasItem(type);
+        }
+
         // Equivalent to consuming 15 Life Crystals, 20 Life Fruit and
         // 9 Mana Crystals: 500 max life and 200 max mana.
-        private static void MaxOutLifeAndMana(Player player)
+        private void MaxOutLifeAndMana(Player player)
         {
             bool changed = player.ConsumedLifeCrystals < Player.LifeCrystalMax
                 || player.ConsumedLifeFruit < Player.LifeFruitMax
@@ -177,24 +172,8 @@ namespace OmniScepter.Items
 
             if (changed)
             {
-                Main.NewText(
-                    Language.GetTextValue("Mods.OmniScepter.Messages.LifeManaMaxed",
-                        player.statLifeMax, player.statManaMax),
-                    255, 200, 60);
+                Announce("LifeManaMaxed", player.statLifeMax, player.statManaMax);
             }
-        }
-
-        private static bool PlayerOwns(Player player, int type)
-        {
-            // Check equipped armor and accessories, then the inventory.
-            foreach (Item item in player.armor)
-            {
-                if (item.type == type)
-                {
-                    return true;
-                }
-            }
-            return player.HasItem(type);
         }
 
         private static void ApplyAllBuffs(Player player)
@@ -205,7 +184,7 @@ namespace OmniScepter.Items
             }
         }
 
-        private static void EnchantAllEquipment(Player player)
+        private void EnchantAllEquipment(Player player)
         {
             int reforged = 0;
 
@@ -221,27 +200,32 @@ namespace OmniScepter.Items
 
             for (int i = 0; i < Main.InventorySlotsTotal; i++)
             {
-                Item item = player.inventory[i];
-                if (!item.IsAir && item.damage > 0 && item.maxStack == 1 && !item.accessory)
+                int prefix = PreferredPrefix(player.inventory[i]);
+                if (prefix != NoPrefix && TryApplyPrefix(player.inventory[i], prefix))
                 {
-                    if (TryApplyPrefix(item, BestWeaponPrefix(item)))
-                    {
-                        reforged++;
-                    }
-                }
-                else if (!item.IsAir && item.accessory)
-                {
-                    if (TryApplyPrefix(item, PrefixID.Menacing))
-                    {
-                        reforged++;
-                    }
+                    reforged++;
                 }
             }
 
-            string key = reforged > 0
-                ? "Mods.OmniScepter.Messages.Reforged"
-                : "Mods.OmniScepter.Messages.NothingToReforge";
-            Main.NewText(Language.GetTextValue(key, reforged), 255, 200, 60);
+            Announce(reforged > 0 ? "Reforged" : "NothingToReforge", reforged);
+        }
+
+        // Returns NoPrefix for anything that cannot take one.
+        private static int PreferredPrefix(Item item)
+        {
+            if (item.IsAir)
+            {
+                return NoPrefix;
+            }
+            if (item.accessory)
+            {
+                return PrefixID.Menacing;
+            }
+            if (item.damage > 0 && item.maxStack == 1)
+            {
+                return BestWeaponPrefix(item);
+            }
+            return NoPrefix;
         }
 
         private static int BestWeaponPrefix(Item item)
@@ -295,15 +279,6 @@ namespace OmniScepter.Items
 
             item.favorited = favorited;
             return item.prefix != originalPrefix;
-        }
-
-        public override void AddRecipes()
-        {
-            // Cheap on purpose: this is a quality-of-life / cheat item.
-            CreateRecipe()
-                .AddIngredient(ItemID.Wood, 10)
-                .AddTile(TileID.WorkBenches)
-                .Register();
         }
     }
 }
